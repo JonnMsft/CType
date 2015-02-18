@@ -1,0 +1,158 @@
+TOPIC
+    about_CType
+
+SHORT DESCRIPTION
+    Create real .NET types without having to write .NET code, plus default table formatting!
+
+LONG DESCRIPTION
+    CType enables module and script authors to easily create their own .NET types.
+    Real .NET types created by CType have several advantages over raw PowerShell mechanisms
+    such as hashtables and PSObjects:
+    (1) CTypes can be used to create type-safe parameter declarations. If one function
+        in your module returns objects of a CType, another function can declare a parameter
+        which will only accept instances of the CType.
+    (2) CTypes can be used in [OutputType([typename])] declarations for your functions
+        which return them. This enables PowerShell (especially PowerShell ISE) to provide
+        enhanced IntelliSense to help your user-scripters anticipate the available properties.
+    (3) If you specify the -width parameter for any of your properties, CType will
+        automatically configure table formatting for your CType.
+
+    CType can also be used to create wrapper classes for SQL rows (System.Data.DataRow).
+    These wrapper classes have all the above advantages plus the following:
+    (4) Property value System.DBNull is automatically converted to $null so that it is
+        boolean-false in scripting. This will help your users who may not be expecting that
+        "if ($mydata.ThisPropertyIsDBNull)" will evaluate to $true and execute the if-block.
+    (5) All properties are read-only for SQL wrapper classes.
+    (6) CType wrapper classes hide unneeded members of the SQL base object, such as
+        property Item[index] and methods AcceptChanges(), EndEdit() etc.
+
+    CTypes only exist inside PowerShell runspaces where they are created,
+    and disappear when the runspace exits. They do not in any way modify
+    your Windows, .NET, or application binaries.
+
+    CTypes can even be dynamic, meaning that the definition is created on-the-fly
+    as your module loads or your script executes. The definition can contain
+    PowerShell structures such as if, foreach etc, like any ScriptBlock. See the example below.
+
+    You should call CType exactly once for each type, generally when your module is loaded.
+    Only one .NET type (including CType) can exist with any given name.
+    Once a CType has been defined with a particular name, you cannot change its definition
+    other than by exiting the runspace and creating a new runspace.
+
+    When choosing the name for your CType, you must specify a namespace which assures that
+    your CType's full name (which includes the namespace) will not conflict with the full name
+    of any .NET type defined by anyone else.
+    Honor the guidelines specified in MSDN under "Names of Namespaces"!
+    If you get this wrong:
+    -- your CType may not load if conflicting .NET assemblies are already loaded; and/or
+    -- your CType may block conflicting .NET assemblies from loading subsequently.
+
+    The CType module has several functions besides "function CType":
+    -- ConvertTo-CTypeSqlWrapper wraps a SQL DataRow instance into a CType you created
+       using the SqlWrapper option.
+    -- Add-CType offers an alternate syntax to create types. It does the exact same thing
+       as "function CType", you can choose which syntax you prefer.
+    -- ConvertTo-CTypeDefinition helps you create CType definitions which wrap
+       a particular SQL object. You first generate an example SQL object, then run
+       ConvertTo-CTypeDefinition, then paste the CType block it emits into your module
+       and modify as needed (for example with formatting).
+       In general you will use this function to help you write your module.
+    -- Get-CTypeFormatPS1XML generates the formatting definition which CType uses to specify
+       table formatting. You can use this if you prefer to put the formatting into a
+       Format.ps1xml file in your module, rather than have CType add it automatically.
+       In general you will use this function to help you write your module.
+    -- Update-CTypeFormatData adds a formatting definition to the current PowerShell runspace.
+       The definition could come from Get-CTypeFormatPS1XML or from elsewhere.
+    -- Test-CTypeIsDefined tests whether you have already defined a particular CType.
+    -- Test-CTypeDotNetTypeIsDefined tests whether a particular CType has already been defined,
+       whether it is a CType or any other type.
+    -- Functions property, sqlproperty, parent, use, ref, SqlWrapper,
+       SqlTemplateObject and NoFormatData, are all helpers used in CType definitions.
+
+    The CType module doesn't do anything you couldn't do yourself with Add-Type and
+    Update-FormatData -PrependPath. CType saves you the trouble of learning C#
+    to write the type definition and Format.ps1xml to write the table formatting.
+    If you have more complex needs you may wind up needing to fall back to C#,
+    but don't forget that PowerShell can add custom properties and methods to any type
+    including CTypes with Add-Member and/or Types.ps1xml (see "Get-Help about_Types.ps1xml").
+
+EXAMPLES
+    (1) Here is an example of how to use CType to create a type and use it in your functions:
+
+        CType MyCompany.MyNamespace.MyClassName {
+          property string PropertyName1 -width 20 -trim
+          if ($true)
+          {
+            property int PropertyName2  -width 15
+          }
+          property string PropertyName3 -width *
+          property bool PropertyName4
+        }
+
+        function New-MyThing
+        {
+            [CmdletBinding()]
+            [OutputType([MyCompany.MyNamespace.MyClassName])]
+            param(
+                [string]$Value
+                )
+            return New-Object -TypeName MyCompany.MyNamespace.MyClassName `
+                    -Property @{PropertyName3 = $value}
+        }
+
+        function Get-MyThing
+        {
+            [CmdletBinding()]
+            param(
+                [MyCompany.MyNamespace.MyClassName]$Thing
+                )
+            $thing.PropertyName3
+        }
+
+        $o = New-MyThing -Value 'Value'
+        'object default formatting is'
+        $o
+        'Get-MyThing returns'
+        Get-MyThing -Thing $o
+
+    which returns
+
+        object default formatting is
+
+        PropertyName1        PropertyName2   PropertyName3                                                                                                                                                                                                               
+        -------------        -------------   -------------                                                                                                                                                                                                               
+                             0               Value                                                                                                                                                                                                                       
+        Get-MyThing returns
+        Value
+
+    Note the following:
+    -- You can use the full PowerShell language inside the type definition.
+    -- The first '{' in the CType definition must be on the same line,
+       unless you use backtick '`'.
+    -- Get-MyThing will refuse any parameter not of the type you defined.
+
+    (2) Here is an example of creating and using a SQLWrapper class:
+
+        CType MyCompany.MyNamespace.MyClassName {
+          sqlproperty string PropertyName1 -width 20 -trim
+          sqlproperty int PropertyName2  -width 15
+          property string PropertyName3 -width *
+          sqlproperty bool PropertyName4
+        }
+        $obj = New-Object -TypeName MyCompany.MyNamespace.MyClassName `
+                          -ArgumentList $myDataRowObject
+        $obj.PropertyName3 = 'SomeString'
+
+        Note that properties 1, 2 and 4 get their values from $myDataRowObject,
+        but the value of property 3 is independent and can be set explicitly.
+
+
+KEYWORDS
+    Type, Types, Format, FormatData
+
+SEE ALSO
+    Get-Help about_Format.ps1xml
+    Get-Help about_Types.ps1xml
+    Add-Type
+    Update-FormatData
+    In MSDN search for "Names of Namespaces"
