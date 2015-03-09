@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<package xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <metadata>
+    <id>CType</id>
+    <title>CType</title>
+    <version>1.00.0003</version>
+    <authors>Jon Newman</authors>
+    <owners>Jon Newman</owners>
+    <summary>CType PowerShell Module</summary>
+    <description>CType makes it easy to create .NET types, including table formatting and SQL wrappers.</description>
+    <projectUrl>https://github.com/JonnMsft/CType</projectUrl>
+    <tags>types powershell cmdlets msi </tags>
+    <licenseUrl>https://raw.githubusercontent.com/JonnMsft/CType/master/license.txt</licenseUrl>
+    <!--
+    <dependencies>
+      <dependency id="chocolatey" version="0.9.8.20" />
+    </dependencies>
+    -->
+  </metadata>
+  <files>
+    <!--
+    <file src="CType.ps1" target="tools" />
+    <file src="CType.psm1" target="tools" />
+    <file src="CType.psd1" target="tools" />
+    <file src="about_CType.txt" target="tools" />
+    <file src="license.txt" target="tools" />
+    -->
+    <file src="CType_InstallShield\Express\SingleImage\DiskImages\DISK1\CType.msi" target="tools" />
+    <file src="chocolateyInstall.ps1" target="" />
+    <file src="chocolateyUninstall.ps1" target="" />
+    <file src="tools\CType\CType.ps1" target="content\CType" />
+    <file src="tools\CType\CType.psm1" target="content\CType" />
+    <file src="tools\CType\CType.psd1" target="content\CType" />
+    <file src="tools\CType\en-US\about_CType.help.txt" target="content\CType\en-US" />
+  </files>
+</package>
